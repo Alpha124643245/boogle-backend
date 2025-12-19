@@ -1,66 +1,44 @@
-// استدعاء المكتبات
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+require("dotenv").config();
 
-// إنشاء التطبيق
+// استدعاء Routes
+const authRoutes = require('./routes/auth');
+const adminRoutes = require('./routes/admin');
+const membreRoutes = require('./routes/membre');
+const projectRoutes = require('./routes/projects');
+const sessionRoutes = require('./routes/sessions');
+const courseRoutes = require('./routes/courses');
+
 const app = express();
 
-// Middlewares
-app.use(cors());
-app.use(express.json());
+// Middleware
+app.use(cors({
+  origin: ["https://boogle-front.vercel.app"], // رابط الـ Frontend متاعك
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
+app.use(express.json()); // باش نقدر نقراو JSON body
 
-// 🔗 ربط MongoDB
-mongoose
-  .connect(
-    "mongodb+srv://booglebeja:Laith2004@boogle.b25vpzh.mongodb.net/boogleDB"
-  )
-  .then(() => console.log("MongoDB connected 🌍"))
-  .catch((err) => console.error("DB Error:", err));
-
-// Route تجريبية
+// Route test
 app.get("/", (req, res) => {
-  res.json({ message: "Backend is running 🚀" });
-});
-const User = require("./models/User"); // استدعاء الموديل
-const bcrypt = require("bcryptjs"); // لتشفير كلمة السر
-
-// Route لتسجيل مستخدم جديد
-app.post("/register", async (req, res) => {
-  const { name, email, password } = req.body;
-
-  try {
-    // نشوفو إذا المستخدم موجود
-    let user = await User.findOne({ email });
-    if (user) {
-      return res.status(400).json({ message: "User already exists" });
-    }
-
-    // تشفير كلمة السر
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // إنشاء مستخدم جديد
-    user = new User({
-      name,
-      email,
-      password: hashedPassword
-    });
-
-    await user.save(); // تخزين في DB
-
-    res.status(201).json({ message: "User registered successfully" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Server error");
-  }
+  res.send("🚀 Boogle backend is running");
 });
 
+// MongoDB connection
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch(err => console.error("❌ MongoDB error:", err));
 
-// PORT خاص بـ Render
-const PORT = process.env.PORT || 3000;
+// Routes
+app.use('/api/auth', authRoutes);        // تسجيل الدخول و التسجيل
+app.use('/api/admin', adminRoutes);      // routes الادمن فقط
+app.use('/api/membre', membreRoutes);    // routes الممبر فقط
+app.use('/api/projects', projectRoutes); // مشاريع الممبر
+app.use('/api/sessions', sessionRoutes); // الجلسات / الكالندري
+app.use('/api/courses', courseRoutes);
 
 // تشغيل السيرفر
-app.listen(PORT, () => {
-  console.log("Server running");
-});
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
